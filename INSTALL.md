@@ -25,7 +25,7 @@ In the file epoch/apps/aecore/src/aec_governance.erl change the line
 
 to something like 
 
-`-define(EXPECTED_BLOCK_MINE_RATE, 15000). %% 15secs * 1000ms * 5 = 15000msecs`
+`-define(EXPECTED_BLOCK_MINE_RATE, 15000). %% 15secs * 1000ms = 15000msecs`
 
 before compiling
 
