@@ -88,14 +88,16 @@ class AENS(Epoch):
         except KeyError:
             return None
 
-    def update(self, target, name_hash, name_ttl, ttl, fee):
+    def update(self, target, name_hash, name_ttl = 600000, ttl = 1, fee = 1):
         if target.startswith("ak"):
             pointers = { "account_pubkey": target }
         elif target.startswith("ok"):
             pointers = { "oracle_pubkey": target }
         else:
             raise ValueError
-            
+
+        pointers = json.dumps(pointers)
+        
         query = {"name_hash": name_hash,
                  "name_ttl": name_ttl,
                  "ttl": ttl,

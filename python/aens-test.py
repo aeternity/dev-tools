@@ -37,30 +37,30 @@ print("Pre-claim result: " + result)
 aens.wait_for_block()
 name_hash = aens.claim(domain, 123, 1)
 
-try:
-    print("Claim result: " + name_hash)
-    aens.wait_for_block()
-    result = aens.query(domain)
-    if result != None:
-        print("Query result now: " + json.dumps(result))
-    else:
-        print("NO NO NO")
-        
-    result = aens.update(aens.get_pub_key(), name_hash, 5, 1, 1)
-    print("Update result: " + result)
-    aens.wait_for_block()
-    result = aens.query(domain)
-    if result != None:
-        print("Query result now: " + json.dumps(result))
-    else:
-        print("NO NO NO")
-        
-finally:
-    result = aens.revoke(name_hash)
-    print("Revoke result: " + result)
-    aens.wait_for_block()
-    result = aens.query(domain)
-    if result != None:
-        print("Query result now: " + json.dumps(result))
-    else:
-        print("Domain now unregistered")
+print("Claim result: " + name_hash)
+aens.wait_for_block()
+result = aens.query(domain)
+if result != None:
+    print("Query result now: " + json.dumps(result))
+else:
+    print("NO NO NO")
+
+aens.wait_for_block
+result = aens.update(aens.get_pub_key(), name_hash)
+print("Update result: " + result)
+aens.wait_for_block()
+result = aens.query(domain)
+if result != None:
+    print("Query result now: " + json.dumps(result))
+else:
+    print("NO NO NO")
+    
+result = aens.revoke(name_hash)
+print("Revoke result: " + result)
+aens.wait_for_block()
+result = aens.query(domain)
+if result != None:
+    print("Query result now: " + json.dumps(result))
+else:
+    print("Domain now unregistered")
+    
