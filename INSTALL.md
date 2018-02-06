@@ -66,21 +66,21 @@ dev1.sh:
 export AE_LOCAL_PORT=3013
 export AE_LOCAL_INTERNAL_PORT=3113
 export AE_WEBSOCKET=3114
-. ~/projects/aeternity/dev-tools/aeternity-functions.sh
+. ${BASH_SOURCE%/*}/aeternity-functions.sh
 ```
 dev2.sh
 ```
 export AE_LOCAL_PORT=3023
 export AE_LOCAL_INTERNAL_PORT=3123
 export AE_WEBSOCKET=3124
-. ~/projects/aeternity/dev-tools/aeternity-functions.sh
+. ${BASH_SOURCE%/*}/aeternity-functions.sh
 ```
 dev3.sh
 ```
 export AE_LOCAL_PORT=3033
 export AE_LOCAL_INTERNAL_PORT=3133
 export AE_WEBSOCKET=3134
-. ~/projects/aeternity/dev-tools/aeternity-functions.sh
+. ${BASH_SOURCE%/*}/aeternity-functions.sh
 ```
 
 You can now play with æternity:
