@@ -29,9 +29,9 @@ to something like
 
 before compiling
 
-### Step 2.2 -- mine (you need to do some mining).
+### Step 2.2 -- configure mining behaviour (you need to do some mining).
 
-the sys.config files under [config/dev1](https://github.com/aeternity/epoch/tree/master/config/dev1) [config/dev2](https://github.com/aeternity/epoch/tree/master/config/dev2) and [config/dev3](https://github.com/aeternity/epoch/tree/master/config/dev3) describe the behaviour of the 3 test nodes. By default none of the nodes mine. Making dev1 mine enables you to play with spending and see easily what is going on. Change '{autostart, false}' under `aecore` to `true` in config/dev1/sys.config for this behaviour.
+the sys.config files under [config/dev1](https://github.com/aeternity/epoch/tree/master/config/dev1) [config/dev2](https://github.com/aeternity/epoch/tree/master/config/dev2) and [config/dev3](https://github.com/aeternity/epoch/tree/master/config/dev3) describe the behaviour of the 3 test nodes. By default none of the nodes mine. Making dev1 mine enables you to play with spending and see easily what is going on. Change '{autostart, false}' under `aecore` tso `true` in config/dev1/sys.config for this behaviour.
 
 ## Step 3 Build and run
 
