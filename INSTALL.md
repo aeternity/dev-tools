@@ -59,7 +59,7 @@ You are recommended to ensure the node is stopped and raise the maximum number o
 make[1]: Leaving directory '/mnt/sdb1/newby/projects/aeternity/src/epoch'
 ```
 
-It's useful to make 3 scripts to reference the instances:
+We have provided 3 convenience scripts which enable you to switch between the instances:
 
 dev1.sh:
 ```
