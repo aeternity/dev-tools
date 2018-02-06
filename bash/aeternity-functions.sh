@@ -20,26 +20,16 @@
 # TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 # PERFORMANCE OF THIS SOFTWARE.
 
-function aeupdate_from_epoch_yaml {
-    export AE_LOCAL_PORT=`cat $EPOCH_HOME/epoch.yaml|grep -A1 http: | grep port|awk -F ':' '{print $2}' | sed -s 's/ //g'`
-    export AE_LOCAL_INTERNAL_PORT=`cat $EPOCH_HOME/epoch.yaml|grep -A6 http: | grep -A1 internal| grep port|awk -F ':' '{print $2}' | sed -s 's/ //g'`
-    export AE_WEBSOCKET=`cat $EPOCH_HOME/epoch.yaml | grep -A3 websocket | grep port|awk -F ':' '{print $2}' | sed -s 's/ //g'`
-    export AE_HOST=localhost
-}
-
 alias aepub_key="curl -s http://127.0.0.1:$AE_LOCAL_INTERNAL_PORT/v2/account/pub-key|jq '.pub_key'|sed -e 's/\"//g'"
-function aeupdate_pub_key {
-    export AE_PUB_KEY=\'`aepub_key`\'
-	  
-}
-aeupdate_pub_key
+
+export AE_PUB_KEY=`aepub_key`
+
 alias aecd="cd $EPOCH_HOME"
-alias aebalance="curl -sG http://127.0.0.1:$AE_LOCAL_INTERNAL_PORT/v2/account/balance/`aepub_key`|jq .balance"
+#alias aebalance="curl -sG http://127.0.0.1:$AE_LOCAL_INTERNAL_PORT/v2/account/balance/`aepub_key`|jq .balance"
 
 function aebalance {
     PUB_KEY=`aepub_key`
     curl -sG "http://127.0.0.1:$AE_LOCAL_INTERNAL_PORT/v2/account/balance/${PUB_KEY}" | jq .balance
-    
 }
 
 function aespend-tx {
