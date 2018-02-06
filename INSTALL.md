@@ -25,7 +25,7 @@ In the file epoch/apps/aecore/src/aec_governance.erl change the line
 
 to something like 
 
-`-define(EXPECTED_BLOCK_MINE_RATE, 15000). %% 15secs * 1000ms * 5 = 15000msecs`
+`-define(EXPECTED_BLOCK_MINE_RATE, 15000). %% 15secs * 1000ms = 15000msecs`
 
 before compiling
 
@@ -59,28 +59,28 @@ You are recommended to ensure the node is stopped and raise the maximum number o
 make[1]: Leaving directory '/mnt/sdb1/newby/projects/aeternity/src/epoch'
 ```
 
-It's useful to make 3 scripts to reference the instances:
+We have provided 3 convenience scripts which enable you to switch between the instances:
 
 dev1.sh:
 ```
 export AE_LOCAL_PORT=3013
 export AE_LOCAL_INTERNAL_PORT=3113
 export AE_WEBSOCKET=3114
-. ~/projects/aeternity/dev-tools/aeternity-functions.sh
+. ${BASH_SOURCE%/*}/aeternity-functions.sh
 ```
 dev2.sh
 ```
 export AE_LOCAL_PORT=3023
 export AE_LOCAL_INTERNAL_PORT=3123
 export AE_WEBSOCKET=3124
-. ~/projects/aeternity/dev-tools/aeternity-functions.sh
+. ${BASH_SOURCE%/*}/aeternity-functions.sh
 ```
 dev3.sh
 ```
 export AE_LOCAL_PORT=3033
 export AE_LOCAL_INTERNAL_PORT=3133
 export AE_WEBSOCKET=3134
-. ~/projects/aeternity/dev-tools/aeternity-functions.sh
+. ${BASH_SOURCE%/*}/aeternity-functions.sh
 ```
 
 You can now play with æternity:
