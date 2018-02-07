@@ -26,6 +26,7 @@ import os
 import time
 import urllib.request
 from websocket import create_connection
+import requests
 
 """
 A base class from which to derive services.
@@ -55,19 +56,13 @@ class Epoch:
             self.websocket = create_connection(self.url)
 
     def get_pub_key(self):
-        js = urllib.request.urlopen("http://localhost:" + \
-                                    os.environ['AE_LOCAL_INTERNAL_PORT'] \
-                                    + "/v2/account/pub-key").read().\
-                                    decode("utf8")
-        data = json.loads(js)
-        return data['pub_key']
-        
+        internal_port = os.environ['AE_LOCAL_INTERNAL_PORT']
+        url = f'http://localhost:{internal_port}/v2/account/pub-key'
+        return requests.get(url).json()
+
     def get_top_block(self):
-        js = urllib.request.urlopen(self.top_block_url).read().\
-               decode("utf8")
-        data = json.loads(js)
+        data = requests.get(self.top_block_url).json()
         height = int(data['height'])
-        print("Height: " + str(height))
         return height
 
     def update_top_block(self):
