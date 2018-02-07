@@ -21,10 +21,8 @@ PERFORMANCE OF THIS SOFTWARE.
 
 """
 
-import json
 import os
 import time
-import urllib.request
 from websocket import create_connection
 import requests
 

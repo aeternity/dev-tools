@@ -27,7 +27,7 @@ import sys
 
 aens = AENS()
 
-domain sys.ARGV[1]
+domain = sys.ARGV[1]
 
 if aens.query(domain) != None:
     print("Domain registered")
