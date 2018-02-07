@@ -2,7 +2,7 @@
 
 Tested on Ubuntu 10.10 and 10.04. This will install a 3-node system for local testing. Optionally you may choose to speed up mining in order to get faster results, and/or restrict mining to one node to make tracking what happens on each node easier.
 
-## Step 1 -- install ESL Erlang 20 on your system.
+## Step 1 -- install ESL Erlang 20 and jq on your system.
 
 Don't use the Ubuntu-provided packages. They cause compile errors.
 
@@ -11,6 +11,12 @@ sudo dpkg -i erlang-solutions_1.0_all.deb
 sudo apt-get update
 sudo apt-get install esl-erlang
 rm erlang-solutions_1.0_all.deb
+```
+
+Also, install jq, which is needed by the bash scripts to interact with the local test nodes:
+
+```
+apt-get install jq
 ```
 
 ## Step 2 -- get the source
@@ -102,3 +108,19 @@ $. ../dev2.sh
 $aebalance 
 200
 ```
+
+## Getting the python part to run
+
+make a python3 virtual environment where you can install all depencencies:
+
+```
+# go to python dir
+cd dev-tools/python
+# create the virtual env in a folder called "venv"
+virtualenv -p python3 venv
+# activate the virtual environment
+source venv/bin/activate
+# install the dependencies
+pip install -r requirements.txt
+```
+
