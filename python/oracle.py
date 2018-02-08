@@ -58,7 +58,7 @@ class Oracle:
         print(j)
         self.epoch.update_top_block()
         self.websocket.send(j)
-        response = json.loads(self.websocket.recv())
+        response = json.loads(self.websocket.receive())
         if not response['payload']['result'] == "ok":
             raise RuntimeError(response)
         oracle_id = response['payload']['oracle_id']
@@ -78,7 +78,7 @@ class Oracle:
         j = json.dumps(query)
         self.websocket.send(j)
         while True:
-            response = json.loads(self.websocket.recv())
+            response = json.loads(self.websocket.receive())
             print(response)
             if response['action'] == 'mined_block':
                 continue
@@ -88,7 +88,7 @@ class Oracle:
             break
         mining_events = 0
         while True:
-            data = self.websocket.recv()
+            data = self.websocket.receive()
             j = json.loads(data)
             print(j)
             if j['action'] == 'mined_block':
@@ -120,7 +120,7 @@ class Oracle:
         j = json.dumps(request)
         print(j)
         self.websocket.send(j)
-        response = self.websocket.recv()
+        response = self.websocket.receive()
         print(response)
         response = json.loads(response)
         if response['payload']['result'] == "ok":
@@ -141,7 +141,7 @@ class Oracle:
         # check response, might have to consume a block mined message
         while True:
             blocks_mined = 0
-            response = self.websocket.recv()
+            response = self.websocket.receive()
             response = json.loads(response)
             print(response)
             if response['action'] == 'mined_block':

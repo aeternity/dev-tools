@@ -18,6 +18,7 @@ class Connection:
 
     def close(self):
         self.websocket.close()
+        self.websocket = None
 
     def assure_connected(self):
         if self.websocket is None:
@@ -26,13 +27,17 @@ class Connection:
     def receive(self):
         self.assure_connected()
         message = json.loads(self.websocket.recv())
-        logger.debug('received from node: %s', message)
+        logger.debug('received: %s', message)
         return message
 
     def send(self, message):
         self.assure_connected()
-        logger.debug('sending to node: %s', message)
+        logger.debug('sending: %s', message)
         self.websocket.send(json.dumps(message))
+
+
+class EpochRequestError(Exception):
+    pass
 
 
 class EpochClient:
@@ -44,9 +49,38 @@ class EpochClient:
         self._config = config
         self._listeners = defaultdict(list)
         self._connection = Connection(config=config)
+        # self.send_and_receive(
+        #     {"target":"chain", "action":"subscribe", "payload":{"type":"mined_block"}},
+        #     print
+        # )
+
+    def http_call(self, method, base_url, endpoint, *args, **kwargs):
+        url = base_url + '/' + endpoint
+        response = requests.request(method, url, *args, **kwargs)
+        print(url)
+        print(response)
+        print(response.text)
+        if response.status_code >= 500:
+            raise EpochRequestError(response)
+        return response.json()
+
+    def internal_http_get(self, endpoint, *args, **kwargs):
+        return self.http_call(
+            'get', self._config.internal_api_url, endpoint, *args, **kwargs
+        )
+
+    def local_http_get(self, endpoint, *args, **kwargs):
+        return self.http_call(
+            'get', self._config.http_api_url, endpoint, *args, **kwargs
+        )
+
+    def local_http_post(self, endpoint, *args, **kwargs):
+        return self.http_call(
+            'post', self._config.http_api_url, endpoint, *args, **kwargs
+        )
 
     def get_pub_key(self):
-        self._config.get_pub_key()
+        return self._config.get_pub_key()
 
     def get_top_block(self):
         data = requests.get(self._config.top_block_url).json()
@@ -72,7 +106,7 @@ class EpochClient:
         self._listeners[(target, action)].remove(callback)
 
     def dispatch_message(self, message):
-        for callback in self._listeners[(message['target'], message['action'])]:
+        for callback in self._listeners[(message['origin'], message['action'])]:
             callback(message)
 
     def mount(self, component):
@@ -80,6 +114,8 @@ class EpochClient:
             callback = getattr(component, callback_name)
             self.add_listener(target, action, callback)
             component.on_mounted(self)
+
+    register_oracle = mount
 
     def unmount(self, component):
         for target, action, callback in component.get_message_listeners():
@@ -89,7 +125,7 @@ class EpochClient:
         self.update_top_block()
         self._connection.send(message)
 
-    def send_and_receive(self, message, receive_callback):
+    def send_and_receive(self, message):
         """
         This is a workaround for the problem described here:
         https://github.com/aeternity/epoch/issues/708
@@ -106,16 +142,58 @@ class EpochClient:
         :return:
         """
         self.send(message)
-        receive_callback(self._connection.receive())
+        return self._connection.receive()
 
     def run(self):
         try:
             while True:
-                message = self._connection.receive()
-                self.dispatch_message(message)
+                try:
+                    message = self._connection.receive()
+                    self.dispatch_message(message)
+                except websocket.WebSocketConnectionClosedException:
+                    self._connection.close()
+                    logger.error('Connection closed by node, retrying in 5s...')
+                    time.sleep(5)
         except KeyboardInterrupt:
             self._connection.close()
             return
+
+    def ask_oracle(
+        self,
+        oracle_pub_key,
+        query_fee,
+        query_ttl,
+        response_ttl,
+        fee,
+        query
+    ):
+        message = {
+            "target": "oracle",
+            "action": "query",
+            "payload": {
+                "type": "OracleQueryTxObject",
+                "vsn": 1,
+                "oracle_pubkey": oracle_pub_key,
+                "query_fee": int(query_fee),
+                "query_ttl": {
+                    "type": "delta", "value": int(query_ttl)
+                },
+                "response_ttl": {
+                    "type": "delta", "value": int(response_ttl)
+                },
+                "fee": int(fee),
+                "query": query
+            }
+        }
+        self.send(message)
+
+    def subscribe_oracle(self, query_id):
+        message = {
+            "target": "oracle",
+            "action": "subscribe",
+            "payload": {"type": "response", "query_id": query_id}
+        }
+        return self.send_and_receive(message, print)
 
 
 class EpochComponent:
@@ -170,7 +248,8 @@ class Oracle(EpochComponent):
     response_format = None
     default_query_fee = None
     default_fee = None
-    default_ttl = None
+    default_query_ttl = None
+    default_response_ttl = None
 
     message_listeners = [
         ('oracle', 'subscribed_to', 'handle_subscribed_to'),
@@ -182,14 +261,16 @@ class Oracle(EpochComponent):
         self._assure_attr_not_none('query_format')
         self._assure_attr_not_none('response_format')
         self._assure_attr_not_none('default_query_fee')
-        self._assure_attr_not_none('default_ttl')
+        self._assure_attr_not_none('default_query_ttl')
+        self._assure_attr_not_none('default_response_ttl')
         self._assure_attr_not_none('message_listeners')
         self.oracle_id = None
+        self.subscribed_to_queries = False
 
     def on_mounted(self, client):
         pub_key = client.get_pub_key()
         # send oracle register signal to the node
-        message = {
+        register_message = {
             "target": "oracle",
             "action": "register",
             "payload": {
@@ -201,31 +282,28 @@ class Oracle(EpochComponent):
                 "query_fee": self.get_query_fee(),
                 "ttl": {
                     "type": "delta",
-                    "value": self.get_ttl()
+                    "value": self.get_query_ttl()
                 },
                 "fee": self.get_fee()
             }
         }
-        client.send_and_receive(message, self.on_registered_to_node)
+        register_response = client.send_and_receive(register_message)
+        if register_response['payload'].get('result') != 'ok':
+            raise OracleRegistrationFailed(register_response)
+        self.oracle_id = register_response['payload']['oracle_id']
 
-    def on_registered_to_node(self, message):
-        """
-        example response:
-            {
-                'action': 'register',
-                'origin': 'oracle',
-                'payload': {
-                    'result': 'ok',
-                    'oracle_id': 'ok$3mMdC1v1v6dXoYKB5v4ryiC8m2De3TafKJM692cVAj6jx9S2gXuiTC3v5t4zSnJ66Wwc799tjb9afzmP8Ry8rbfyaQbSHn',
-                    'tx_hash': 'th$HCKrVQe2ce6WnK1vJGJ8wHh2dtZzbPeTjv98a3sUW2bdtHfoW'
-                }
-            }
-        :param message:
-        :return:
-        """
-        if message['payload']['result'] != 'ok':
-            raise OracleRegistrationFailed(message)
-        self.oracle_id = message['payload']['oracle_id']
+        subscribe_message = {
+            "target": "chain",
+            "action": "subscribe",
+            "payload": {"type": "query", 'oracle_id': self.oracle_id}
+        }
+        subscribe_response = client.send_and_receive(subscribe_message)
+        if subscribe_response['payload'].get('result') != 'ok':
+            raise OracleRegistrationFailed(subscribe_response)
+        subscribed_to = subscribe_response['payload']['subscribed_to']
+        logger.debug(f'Subscribed to {subscribed_to}')
+        self.subscribed_to_queries = True
+
 
     def get_query_fee(self):
         # TODO: does is make sense to make this variable during runtime?
@@ -234,16 +312,19 @@ class Oracle(EpochComponent):
     def get_fee(self):
         return self.default_fee
 
-    def get_ttl(self):
+    def get_query_ttl(self):
         # TODO: does is make sense to make this variable during runtime?
-        return self.default_ttl
+        return self.default_query_ttl
+
+    def get_response_ttl(self):
+        return self.default_response_ttl
 
     def handle_subscribed_to(self, message):
         print('handle_subscribed_to')
         print(message)
         # message['payload']['subscribed_to']['oracle_id']
 
-    def get_reply(self, request):
+    def get_reply(self, message):
         raise NotImplementedError()
 
     def _respond_to_query(self, query_id, request):
