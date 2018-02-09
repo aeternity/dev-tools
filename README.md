@@ -1,4 +1,4 @@
-# aeternity-dev-tools
+# aeternity-python
 
 ## Introduction
 
@@ -12,8 +12,8 @@ an epoch node on your local machine.
 Oracles are a means to provide external data in the block chain which then
 can be used in smart contracts. There are two roles when using an oracle:
 
-    - Oracle Operator ("hosts" the oracle and responds to queries)
-    - Oracle User (sends queries to the oracle)
+ - Oracle Operator ("hosts" the oracle and responds to queries)
+ - Oracle User (sends queries to the oracle)
 
 To provide an Oracle on the block chain, you have to inherit from aeternity.Oracle
 and implement `get_reply` which will be passed a `message` when a request to
@@ -23,7 +23,7 @@ Furthermore you must specify `query_format`, `response_format`,
 `default_query_fee`, `default_fee`, `default_query_ttl`, `default_response_ttl`
 
 For example:
-```
+```python
 from aeternity import Oracle
 
 class WeatherOracle(Oracle):
@@ -43,7 +43,7 @@ To act as operator of this oracle, you have to connect to your local epoch node
 find out how to run a local node), instantiate your oracle and
 register it on the block chain.
 
-```
+```python
 from aeternity import Config, EpochClient
 # example configuration to create a connection to your node:
 config = Config(local_port=3013, internal_port=3113, websocket_port=3114)
@@ -60,7 +60,7 @@ client.run()
 To register human-readable names with the aeternity naming system you also need
 to connect to your local epoch node.
 
-```
+```python
 from aeternity import Config, EpochClient, Name
 import sys
 # create connection with the local node:
