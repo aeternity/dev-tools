@@ -6,25 +6,18 @@ from aeternity import EpochClient, Name, InvalidName
 def print_usage():
     print('''aeternity cli tool:
 Usage:
-
     aens available <domain.aet>
-        Checks Domain availablity
-
+            Check Domain availablity    
     aens register <domain.aet> [--no-input]
-        Registers a domain (incurs fees!)
-
+            Register a domain (incurs fees!)    
     aens status <domain.aet>
-        Checks the status of a domain
-
+            Checks the status of a domain    
     aens update <domain.aet> <address>
-        Updates where the name points to
-
+            Updates where the name points to    
     aens revoke <domain.aet> [--no-input]
-        removes this domain from the block chain (incurs fees!)
-
+            Removes this domain from the block chain (incurs fees!)    
     aens transfer <domain.aet> <receipient_address> [--no-input]
-
-
+            Transfers a domain to another user
 The `--no-input` will suppress any questions before performing the action.
 
 ''')
