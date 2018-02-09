@@ -12,13 +12,13 @@ class Config:
     def __init__(self, local_port=None, internal_port=None, websocket_port=None, host='localhost'):
         try:
             if local_port is None:
-                local_port = os.environ['AE_LOCAL_PORT']
+                local_port = os.environ.get('AE_LOCAL_PORT', 3013)
             self.local_port = local_port
             if internal_port is None:
-                internal_port = os.environ['AE_LOCAL_INTERNAL_PORT']
+                internal_port = os.environ.get('AE_LOCAL_INTERNAL_PORT', 3113)
             self.local_internal_port = internal_port
             if websocket_port is None:
-                websocket_port = os.environ['AE_WEBSOCKET']
+                websocket_port = os.environ.get('AE_WEBSOCKET', 3114)
             self.websocket_port = websocket_port
         except KeyError:
             raise ConfigException(
@@ -50,7 +50,7 @@ class Config:
 
     def get_pubkey(self):
         if self.pubkey is None:
-            self.pubkey = requests.get(self.pubkey_url).json()['pubkey']
+            self.pubkey = requests.get(self.pubkey_url).json()['pub_key']
         return self.pubkey
 
     @classmethod
