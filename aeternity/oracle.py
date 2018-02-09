@@ -65,8 +65,7 @@ class EpochClient:
         try:
             return response.json()
         except JSONDecodeError:
-            print(response.text)
-            raise EpochRequestError(response)
+            raise EpochRequestError(response.text)
 
     def internal_http_get(self, endpoint, **kwargs):
         return self.http_call(
