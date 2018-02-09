@@ -1,15 +1,24 @@
 import json
 import random
 
-from aeternity.oracle import EpochClient
+from aeternity.oracle import EpochClient, Oracle
 
 
-class MissingPreclaim(Exception):
+class ClaimException(Exception):
     pass
 
 
-class TooEarlyClaim(Exception):
+class MissingPreclaim(ClaimException):
     pass
+
+
+class TooEarlyClaim(ClaimException):
+    pass
+
+
+class InvalidName(Exception):
+    pass
+
 
 class NameStatus:
     UNKNOWN = 'UNKNOWN'
@@ -21,6 +30,8 @@ class Name:
     def __init__(self, domain, client=None):
         if client is None:
             client = EpochClient()
+        self.__class__.validate_name(domain)
+
         self.client = client
         self.domain = domain
         self.status = NameStatus.UNKNOWN
@@ -29,6 +40,13 @@ class Name:
         self.name_hash = None
         self.name_ttl = 0
         self.pointers = []
+
+    @classmethod
+    def validate_name(cls, domain):
+        # TODO: validate according to the spec!
+        # TODO: https://github.com/aeternity/protocol/blob/master/AENS.md#name
+        if not domain.endswith(('.aet', '.test')):
+            raise InvalidName('AENS TLDs must end in .aet')
 
     def update_status(self):
         response = self.client.local_http_get('name', params={'name': self.domain})
@@ -78,8 +96,13 @@ class Name:
                 'Use `claim_blocking` if you have a lot of time on your hands'
             )
 
-    def update_pointer(self, target):
+    def update(self, target):
         assert self.status == NameStatus.CLAIMED, 'Must be claimed to update pointer'
+
+        if isinstance(target, Oracle):
+            if target.oracle_id is None:
+                raise ValueError('You must register the oracle before using it as target')
+            target = target.oracle_id
 
         if target.startswith('ak'):
             pointers = {'account_pubkey': target}

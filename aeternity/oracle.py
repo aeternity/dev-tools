@@ -304,7 +304,6 @@ class Oracle(EpochComponent):
         logger.debug(f'Subscribed to {subscribed_to}')
         self.subscribed_to_queries = True
 
-
     def get_query_fee(self):
         # TODO: does is make sense to make this variable during runtime?
         return self.default_query_fee
