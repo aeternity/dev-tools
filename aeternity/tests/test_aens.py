@@ -1,10 +1,10 @@
 import random
 import string
 
-from nose.tools import *
+from pytest import raises
 
 from aeternity import Config, EpochClient
-from aeternity.aens import InvalidName, Name
+from aeternity.aens import InvalidName, Name, AENSException
 from aeternity.config import ConfigException
 
 # to run this test in other environments set the env vars as specified in the
@@ -22,9 +22,9 @@ def random_domain(length=10):
     rand_str = ''.join(random.choice(string.ascii_letters) for _ in range(length))
     return rand_str + '.aet'
 
-@raises(InvalidName)
 def test_name_validation_fails():
-    Name('test.lol')
+    with raises(InvalidName):
+        Name('test.lol')
 
 def test_name_validation_succeeds():
     Name('test.aet')
@@ -54,8 +54,7 @@ def test_name_status_unavailable():
     # claim a domain
     domain = random_domain()
     occupy_name = Name(domain)
-    occupy_name.preclaim()
-    occupy_name.claim_blocking()
+    occupy_name.full_claim_blocking()
     # wait for the state to propagate in the block chain
     EpochClient().wait_for_next_block()
     same_name = Name(domain)
@@ -66,6 +65,31 @@ def test_name_update():
     # claim a domain
     domain = random_domain()
     name = Name(domain)
-    name.preclaim()
-    name.claim_blocking()
+    name.full_claim_blocking()
     name.update(target=client.get_pubkey())
+    client.wait_for_next_block()
+    name.update_status()
+    assert name.pointers['account_pubkey'] == client.get_pubkey()
+
+def test_transfer_ownership():
+    client = EpochClient()
+    name = Name(random_domain())
+    name.full_claim_blocking()
+    client.wait_for_next_block()
+    name.transfer_ownership('ak$3scLu3oJbhsdCJkDjfJ6BUPJ4M9ZZJe57CQ56deSbEXhaTSfG3Wf3i2GYZV6APX7RDDVk4Weewb7oLePte3H3QdBw4rMZw')
+    assert name.status == Name.Status.TRANSFERRED
+
+def test_transfer_failure_wrong_pubkey():
+    client = EpochClient()
+    name = Name(random_domain())
+    name.full_claim_blocking()
+    client.wait_for_next_block()
+    with raises(AENSException):
+        name.transfer_ownership('ak$deadbeef')
+
+def test_revocation():
+    name = Name(random_domain())
+    name.full_claim_blocking()
+    EpochClient().wait_for_next_block()
+    name.revoke()
+    assert name.status == Name.Status.REVOKED

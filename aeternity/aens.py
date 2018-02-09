@@ -7,31 +7,45 @@ class InvalidName(Exception):
     pass
 
 
-class GeneralClaimException(Exception):
+class AENSException(Exception):
+    def __init__(self, *args, payload=None):
+        super().__init__(*args)
+        self.payload = payload
+
+    def __str__(self):
+        return super().__str__() + '\npayload\n' + str(self.payload)
+
+class MissingPreclaim(AENSException):
     pass
 
 
-class MissingPreclaim(GeneralClaimException):
+class PreclaimFailed(AENSException):
     pass
 
 
-class PreclaimFailed(GeneralClaimException):
+class TooEarlyClaim(AENSException):
     pass
 
 
-class TooEarlyClaim(GeneralClaimException):
+class ClaimFailed(AENSException):
     pass
 
 
-class ClaimFailed(GeneralClaimException):
+class NameNotAvailable(AENSException):
+    pass
+
+
+class UpdateError(Exception):
     pass
 
 
 class NameStatus:
+    REVOKED = 'REVOKED'
     UNKNOWN = 'UNKNOWN'
     AVAILABLE = 'AVAILABLE'
     PRECLAIMED = 'PRECLAIMED'
     CLAIMED = 'CLAIMED'
+    TRANSFERRED = 'TRANSFERRED'
 
 
 class Name:
@@ -55,6 +69,11 @@ class Name:
         self.pointers = []
 
     @classmethod
+    def validate_pointer(cls, pointer):
+        if not pointer.startswith(('ak$')):
+            raise ValueError('pointer addresses must start with in ak$')
+
+    @classmethod
     def validate_name(cls, domain):
         # TODO: validate according to the spec!
         # TODO: https://github.com/aeternity/protocol/blob/master/AENS.md#name
@@ -63,13 +82,16 @@ class Name:
 
     def update_status(self):
         response = self.client.local_http_get('name', params={'name': self.domain})
-        if response.get('reason') == 'Name not found':
+        wasnt_found = response.get('reason') == 'Name not found'
+        # e.g. if the status is already PRECLAIMED or CLAIMED, don't reset
+        # it to AVAILABLE.
+        if wasnt_found and self.status == NameStatus.UNKNOWN:
             self.status = NameStatus.AVAILABLE
         else:
             self.status = NameStatus.CLAIMED
             self.name_hash = response['name_hash']
             self.name_ttl = response['name_ttl']
-            self.pointers = response['pointers']
+            self.pointers = json.loads(response['pointers'])
 
     def is_available(self):
         self.update_status()
@@ -78,6 +100,12 @@ class Name:
     def check_claimed(self):
         self.update_status()
         return self.status == NameStatus.CLAIMED
+
+    def full_claim_blocking(self):
+        if not self.is_available():
+            raise NameNotAvailable(self.domain)
+        self.preclaim()
+        self.claim_blocking()
 
     def preclaim(self):
         # check which block we used to create the preclaim
@@ -153,7 +181,7 @@ class Name:
         else:
             pointers = {'oracle_pubkey': target}
 
-        response = self.client.local_http_post(
+        response = self.client.internal_http_post(
             'name-update-tx',
             json={
                 "name_hash": self.name_hash,
@@ -163,12 +191,33 @@ class Name:
                 "fee": 1
             }
         )
-        print(response)
+        if 'name_hash' in response:
+            self.pointers = pointers
+        else:
+            raise UpdateError(response)
 
     def transfer_ownership(self, receipient_pubkey):
-        # TODO
-        pass
+        response = self.client.internal_http_post(
+            'name-transfer-tx',
+            json={
+                "name_hash": self.name_hash,
+                "recipient_pubkey": receipient_pubkey,
+                "fee": 1
+            }
+        )
+        if 'name_hash' not in response:
+            raise AENSException('transfer ownership failed', payload=response)
+        self.status = NameStatus.TRANSFERRED
 
     def revoke(self):
-        # TODO
-        pass
+        response = self.client.internal_http_post(
+            'name-revoke-tx',
+            json={
+                "name_hash": self.name_hash,
+                "fee": 1
+            }
+        )
+        if 'name_hash' in response:
+            self.status = NameStatus.REVOKED
+        else:
+            raise AENSException('Error revoking name', payload=response)
