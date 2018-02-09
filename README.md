@@ -19,6 +19,8 @@ To provide an Oracle on the block chain, you have to inherit from aeternity.Orac
 and implement `get_reply` which will be passed a `message` when a request to
 this oracle was found in the block chain.
 
+#### Oracle Operator
+
 Furthermore you must specify `query_format`, `response_format`,
 `default_query_fee`, `default_fee`, `default_query_ttl`, `default_response_ttl`
 
@@ -39,9 +41,8 @@ class WeatherOracle(Oracle):
 ```
 
 To act as operator of this oracle, you have to connect to your local epoch node
-(see [https://github.com/aeternity/epoch](https://github.com/aeternity/epoch] to
-find out how to run a local node), instantiate your oracle and
-register it on the block chain.
+(see [the epoch repo](https://github.com/aeternity/epoch] to find out how to run
+a local node), instantiate your oracle and register it on the block chain.
 
 ```python
 from aeternity import Config, EpochClient
@@ -51,6 +52,11 @@ client = EpochClient(config=config)  # connect with the epoch node
 client.register_oracle(WeatherOracle())  # instantiate and register your oracle
 client.run() # blocking, responds to all queries for all registered oracles
 ```
+
+#### Oracle User
+
+**TODO**
+
 
 ### AENS (aeternity name system)
 
