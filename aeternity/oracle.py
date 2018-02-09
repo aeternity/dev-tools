@@ -88,8 +88,8 @@ class EpochClient:
             'post', self._config.http_api_url, endpoint, **kwargs
         )
 
-    def get_pub_key(self):
-        return self._config.get_pub_key()
+    def get_pubkey(self):
+        return self._config.get_pubkey()
 
     def get_top_block(self):
         data = requests.get(self._config.top_block_url).json()
@@ -169,7 +169,7 @@ class EpochClient:
 
     def ask_oracle(
         self,
-        oracle_pub_key,
+        oracle_pubkey,
         query_fee,
         query_ttl,
         response_ttl,
@@ -182,7 +182,7 @@ class EpochClient:
             "payload": {
                 "type": "OracleQueryTxObject",
                 "vsn": 1,
-                "oracle_pubkey": oracle_pub_key,
+                "oracle_pubkey": oracle_pubkey,
                 "query_fee": int(query_fee),
                 "query_ttl": {
                     "type": "delta", "value": int(query_ttl)
@@ -277,7 +277,7 @@ class Oracle(EpochComponent):
         self.subscribed_to_queries = False
 
     def on_mounted(self, client):
-        pub_key = client.get_pub_key()
+        pubkey = client.get_pubkey()
         # send oracle register signal to the node
         register_message = {
             "target": "oracle",
@@ -285,7 +285,7 @@ class Oracle(EpochComponent):
             "payload": {
                 "type": "OracleRegisterTxObject",
                 "vsn": 1,
-                "account": pub_key,
+                "account": pubkey,
                 "query_format": self.__class__.query_format,
                 "response_format": self.__class__.response_format,
                 "query_fee": self.get_query_fee(),
@@ -336,7 +336,7 @@ class Oracle(EpochComponent):
         raise NotImplementedError()
 
     def _respond_to_query(self, query_id, request):
-        self.connection.send({
+        self.send({
             "target": "oracle",
             "action": "response",
             "payload": {

@@ -3,10 +3,20 @@ import string
 
 from nose.tools import *
 
-from aeternity import Config
+from aeternity import Config, EpochClient
 from aeternity.aens import InvalidName, Name
+from aeternity.config import ConfigException
 
-Config.set_default(Config(local_port=3013, internal_port=3113, websocket_port=3114))
+# to run this test in other environments set the env vars as specified in the
+# config.py
+try:
+    # if there are no env vars set for the config, this call will fail
+    Config()
+except ConfigException:
+    # in this case we create a default config that should work on the dev
+    # machines.
+    Config.set_default(Config(local_port=3013, internal_port=3113, websocket_port=3114))
+
 
 def random_domain(length=10):
     rand_str = ''.join(random.choice(string.ascii_letters) for _ in range(length))
@@ -46,8 +56,16 @@ def test_name_status_unavailable():
     occupy_name = Name(domain)
     occupy_name.preclaim()
     occupy_name.claim_blocking()
+    # wait for the state to propagate in the block chain
+    EpochClient().wait_for_next_block()
+    same_name = Name(domain)
+    assert not same_name.is_available()
 
-
-    #same_name = Name(domain)
-    #assert not same_name.is_available()
-
+def test_name_update():
+    client = EpochClient()
+    # claim a domain
+    domain = random_domain()
+    name = Name(domain)
+    name.preclaim()
+    name.claim_blocking()
+    name.update(target=client.get_pubkey())

@@ -38,20 +38,20 @@ class Config:
         self.transfer_url = self.internal_api_url + "/name-transfer-tx"
         self.revoke_url = self.internal_api_url + "/name-revoke-tx"
 
-        self.pub_key = None
+        self.pubkey = None
 
     @property
     def top_block_url(self):
         return f'{self.http_api_url}/top'
 
     @property
-    def pub_key_url(self):
+    def pubkey_url(self):
         return f'{self.internal_api_url}/account/pub-key'
 
-    def get_pub_key(self):
-        if self.pub_key is None:
-            self.pub_key = requests.get(self.pub_key_url).json()['pub_key']
-        return self.pub_key
+    def get_pubkey(self):
+        if self.pubkey is None:
+            self.pubkey = requests.get(self.pubkey_url).json()['pubkey']
+        return self.pubkey
 
     @classmethod
     def set_default(cls, config):
