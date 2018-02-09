@@ -29,16 +29,19 @@ import json
 import os
 import requests
 import urllib
+
+from requests import RequestException
 from websocket import create_connection
 
 class AENS(Epoch):
 
     def __init__(self):
         super().__init__()
-        self.name_url = "http://localhost:" + os.environ['AE_LOCAL_PORT'] \
-                        + "/v2/name"
-        internal_url = "http://localhost:" + \
-                         os.environ['AE_LOCAL_INTERNAL_PORT'] 
+        ae_local_port = os.environ['AE_LOCAL_PORT']
+        ae_internal_port = os.environ['AE_LOCAL_INTERNAL_PORT']
+        internal_url = f'http://localhost:{ae_internal_port}'
+
+        self.name_url = f'http://localhost:{ae_local_port}/v2/name'
         self.pre_claim_url = internal_url + "/v2/name-preclaim-tx"
         self.claim_url = internal_url + "/v2/name-claim-tx"
         self.update_url = internal_url + "/v2/name-update-tx"
@@ -48,43 +51,43 @@ class AENS(Epoch):
         
     def query(self, name):
         try:
-            js = urllib.request.urlopen(self.name_url + "?name=" + name).\
-                                                                 read().\
-                                                                 decode("utf8")
-        except urllib.error.HTTPError:
+            return requests.get(self.name_url, params={'name': name}).json()
+        except RequestException:
             # Name not found, not URL not found.
             return None
-        
-        data = json.loads(js)
-        print(data)
-        return data
-        
+
     # Commitment hash needs to be passed in right now 
     def pre_claim(self, commitment, fee):
-        query = { "commitment": commitment,
-                  "fee": fee }
+        query = {
+            "commitment": commitment,
+            "fee": fee
+        }
         print(json.dumps(query))
-        response = json.loads(requests.post(self.pre_claim_url,
-                                            json = query,
-                                            headers = {"Connection": "close"})
-                            .text)
+        response = requests.post(
+            self.pre_claim_url,
+            json=query,
+            headers={"Connection": "close"}
+        )
         try:
-            return response['commitment']
+            return response.json()['commitment']
         except KeyError:
             return None
 
     def claim(self, name, salt, fee):
-        query = {"name": name,
-                 "name_salt": salt,
-                 "fee": fee}
+        query = {
+            "name": name,
+            "name_salt": salt,
+            "fee": fee
+        }
         print(json.dumps(query))
-        response = json.loads(requests.post(self.claim_url,
-                                            json = query,
-                                            headers = {"Connection": "close"})
-                              .text)
+        response = requests.post(
+            self.claim_url,
+            json=query,
+            headers={"Connection": "close"}
+        )
         print(json.dumps(response))
         try:
-            return response['name_hash']
+            return response.json()['name_hash']
         except KeyError:
             return None
 
@@ -98,14 +101,15 @@ class AENS(Epoch):
 
         pointers = json.dumps(pointers)
         
-        query = {"name_hash": name_hash,
-                 "name_ttl": name_ttl,
-                 "ttl": ttl,
-                 "pointers": pointers,
-                 "fee": fee }
+        query = {
+            "name_hash": name_hash,
+            "name_ttl": name_ttl,
+            "ttl": ttl,
+            "pointers": pointers,
+            "fee": fee
+        }
         print(json.dumps(query))
-        data = requests.post(self.update_url,
-                             json = query).text
+        data = requests.post(self.update_url, json=query).text
         print(data)
         response = json.loads(data) 
         try:
@@ -114,12 +118,13 @@ class AENS(Epoch):
             return None
 
     def transfer(self, name_hash, recipient):
-        query = {"name_hash": name_hash,
-                 "recipient_pubkey": recipient,
-                 "fee": 1 }
+        query = {
+            "name_hash": name_hash,
+            "recipient_pubkey": recipient,
+            "fee": 1
+        }
         print(json.dumps(query))
-        response = json.loads(requests.post(self.transfer_url,
-                                            json = query).text) 
+        response = requests.post(self.transfer_url, json=query).json()
         try:
             return response['name_hash']
         except KeyError:
