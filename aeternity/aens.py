@@ -36,7 +36,7 @@ class Name:
         self.domain = domain
         self.status = NameStatus.UNKNOWN
         self.preclaimed_block_height = None
-        # this is set after being claimed
+        # this following set after being claimed
         self.name_hash = None
         self.name_ttl = 0
         self.pointers = []
@@ -58,7 +58,7 @@ class Name:
             self.name_ttl = response['name_ttl']
             self.pointers = response['pointers']
 
-    def check_available(self):
+    def is_available(self):
         self.update_status()
         return self.status == NameStatus.AVAILABLE
 

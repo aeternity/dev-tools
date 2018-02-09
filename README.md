@@ -72,7 +72,7 @@ client = EpochClient(config)
 
 # try registering 'example.aet' on the block chain:
 name = Name(domain='example.aet')
-if not name.check_available():
+if not name.is_available():
     print('Name is not available anymore!')
     sys.exit(1)
 

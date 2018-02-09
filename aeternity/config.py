@@ -23,7 +23,7 @@ class Config:
         except KeyError:
             raise ConfigException(
                 'You must either specify the Config manually, use '
-                'Config.set_default or provice the env vars AE_LOCAL_PORT, '
+                'Config.set_default or provide the env vars AE_LOCAL_PORT, '
                 'AE_LOCAL_INTERNAL_PORT and AE_WEBSOCKET'
             )
 
