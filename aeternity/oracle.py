@@ -2,6 +2,8 @@ import json
 from collections import defaultdict, namedtuple
 
 import logging
+from json import JSONDecodeError
+
 import requests
 import time
 import websocket
@@ -49,34 +51,41 @@ class EpochClient:
         self._config = config
         self._listeners = defaultdict(list)
         self._connection = Connection(config=config)
+        self._top_block = None
         # self.send_and_receive(
         #     {"target":"chain", "action":"subscribe", "payload":{"type":"mined_block"}},
         #     print
         # )
 
-    def http_call(self, method, base_url, endpoint, *args, **kwargs):
+    def http_call(self, method, base_url, endpoint, **kwargs):
         url = base_url + '/' + endpoint
-        response = requests.request(method, url, *args, **kwargs)
-        print(url)
-        print(response)
-        print(response.text)
+        response = requests.request(method, url, **kwargs)
         if response.status_code >= 500:
             raise EpochRequestError(response)
-        return response.json()
+        try:
+            return response.json()
+        except JSONDecodeError:
+            print(response.text)
+            raise EpochRequestError(response)
 
-    def internal_http_get(self, endpoint, *args, **kwargs):
+    def internal_http_get(self, endpoint, **kwargs):
         return self.http_call(
-            'get', self._config.internal_api_url, endpoint, *args, **kwargs
+            'get', self._config.internal_api_url, endpoint, **kwargs
         )
 
-    def local_http_get(self, endpoint, *args, **kwargs):
+    def internal_http_post(self, endpoint, **kwargs):
         return self.http_call(
-            'get', self._config.http_api_url, endpoint, *args, **kwargs
+            'post', self._config.internal_api_url, endpoint, **kwargs
         )
 
-    def local_http_post(self, endpoint, *args, **kwargs):
+    def local_http_get(self, endpoint, **kwargs):
         return self.http_call(
-            'post', self._config.http_api_url, endpoint, *args, **kwargs
+            'get', self._config.http_api_url, endpoint, **kwargs
+        )
+
+    def local_http_post(self, endpoint, **kwargs):
+        return self.http_call(
+            'post', self._config.http_api_url, endpoint, **kwargs
         )
 
     def get_pub_key(self):

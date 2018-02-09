@@ -89,3 +89,9 @@ client.register_oracle(oracle)  # the oracle must be registered for this to work
 name.update(target=oracle)
 ```
 
+## Reference:
+
+(AENS API Spec)[https://github.com/aeternity/protocol/blob/master/epoch/api/naming_system_api_usage.md]
+(AENS Protocol)[https://github.com/aeternity/protocol/blob/master/AENS.md]
+
+

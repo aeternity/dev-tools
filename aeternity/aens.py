@@ -3,30 +3,40 @@ import random
 
 from aeternity.oracle import EpochClient, Oracle
 
-
-class ClaimException(Exception):
-    pass
-
-
-class MissingPreclaim(ClaimException):
-    pass
-
-
-class TooEarlyClaim(ClaimException):
-    pass
-
-
 class InvalidName(Exception):
+    pass
+
+
+class GeneralClaimException(Exception):
+    pass
+
+
+class MissingPreclaim(GeneralClaimException):
+    pass
+
+
+class PreclaimFailed(GeneralClaimException):
+    pass
+
+
+class TooEarlyClaim(GeneralClaimException):
+    pass
+
+
+class ClaimFailed(GeneralClaimException):
     pass
 
 
 class NameStatus:
     UNKNOWN = 'UNKNOWN'
     AVAILABLE = 'AVAILABLE'
+    PRECLAIMED = 'PRECLAIMED'
     CLAIMED = 'CLAIMED'
 
 
 class Name:
+    Status = NameStatus
+
     def __init__(self, domain, client=None):
         if client is None:
             client = EpochClient()
@@ -35,8 +45,11 @@ class Name:
         self.client = client
         self.domain = domain
         self.status = NameStatus.UNKNOWN
+        # set after preclaimed:
         self.preclaimed_block_height = None
-        # this following set after being claimed
+        self.preclaimed_commitment_hash = None
+        self.preclaim_salt = None
+        # set after claimed
         self.name_hash = None
         self.name_ttl = 0
         self.pointers = []
@@ -69,32 +82,63 @@ class Name:
     def preclaim(self):
         # check which block we used to create the preclaim
         self.preclaimed_block_height = self.client.get_top_block()
-        salt = random.randint(0, 2**64)
+        self.preclaim_salt = random.randint(0, 2**64)
         response = self.client.local_http_get(
             'commitment-hash',
-            params={'name': self.domain, 'salt': salt}
+            params={
+                'name': self.domain,
+                'salt': self.preclaim_salt
+            }
         )
-        commitment_hash = response['commitment']
-        response = self.client.local_http_post(
+        try:
+            commitment_hash = response['commitment']
+        except KeyError:
+            raise PreclaimFailed(response)
+        response = self.client.internal_http_post(
             'name-preclaim-tx',
-            json={"commitment": commitment_hash, "fee": 1}
+            json={
+                "commitment": commitment_hash,
+                "fee": 1
+            },
         )
-        print('preclaim response')
-        print(response)
+        try:
+            # the response is an empty dict if the call failed error
+            self.preclaimed_commitment_hash = response['commitment']
+            self.status = NameStatus.PRECLAIMED
+        except KeyError:
+            raise PreclaimFailed(response)
 
     def claim_blocking(self):
-        self.client.wait_for_next_block()
-        self.claim()
+        try:
+            self.claim()
+        except TooEarlyClaim:
+            self.client.wait_for_next_block()
+            self.claim()
 
     def claim(self):
         if self.preclaimed_block_height is None:
             raise MissingPreclaim('You must call preclaim before claiming a name')
+
         current_block_height = self.client.get_top_block()
         if self.preclaimed_block_height >= current_block_height:
             raise TooEarlyClaim(
                 'You must wait for one block to call claim.'
                 'Use `claim_blocking` if you have a lot of time on your hands'
             )
+
+        response = self.client.internal_http_post(
+            'name-claim-tx',
+            json={
+                'name': self.domain,
+                'name_salt': self.preclaim_salt,
+                'fee': 1
+            }
+        )
+        try:
+            self.name_hash = response['name_hash']
+            self.status = Name.Status.CLAIMED
+        except KeyError:
+            raise ClaimFailed(response)
 
     def update(self, target):
         assert self.status == NameStatus.CLAIMED, 'Must be claimed to update pointer'
