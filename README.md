@@ -41,7 +41,7 @@ class WeatherOracle(Oracle):
 ```
 
 To act as operator of this oracle, you have to connect to your local epoch node
-(see [the epoch repo](https://github.com/aeternity/epoch] to find out how to run
+(see [the epoch repo](https://github.com/aeternity/epoch) to find out how to run
 a local node), instantiate your oracle and register it on the block chain.
 
 ```python

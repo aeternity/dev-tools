@@ -120,3 +120,11 @@ class Name:
             }
         )
         print(response)
+
+    def transfer_ownership(self, receipient_pubkey):
+        # TODO
+        pass
+
+    def revoke(self):
+        # TODO
+        pass
