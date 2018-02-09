@@ -49,8 +49,7 @@ from aeternity import Config, EpochClient
 config = Config(local_port=3013, internal_port=3113, websocket_port=3114)
 client = EpochClient(config=config)  # connect with the epoch node
 client.register_oracle(WeatherOracle())  # instantiate and register your oracle
-# listen to all events on the block chain and respond to all queries
-client.run()
+client.run() # blocking, responds to all queries for all registered oracles
 ```
 
 ### AENS (aeternity name system)
