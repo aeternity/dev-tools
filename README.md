@@ -47,10 +47,8 @@ register it on the block chain.
 from aeternity import Config, EpochClient
 # example configuration to create a connection to your node:
 config = Config(local_port=3013, internal_port=3113, websocket_port=3114)
-# connect with the epoch node
-client = EpochClient(config=config)
-# instantiate and register your oracle
-client.register_oracle(WeatherOracle())
+client = EpochClient(config=config)  # connect with the epoch node
+client.register_oracle(WeatherOracle())  # instantiate and register your oracle
 # listen to all events on the block chain and respond to all queries
 client.run()
 ```
@@ -69,21 +67,20 @@ client = EpochClient(config)
 
 # try registering 'example.aet' on the block chain:
 name = Name(domain='example.aet')
-# before trying to register, make sure that the name is still available
 if not name.check_available():
     print('Name is not available anymore!')
     sys.exit(1)
-#
-name.preclaim()
-# alternatively you can also call `claim`, which isn't blocking, but raises a
-# `ClaimException` if there is an error claiming the domain.
-name.claim_blocking()
-name.update(target='ak$1234deadbeef')
-# you can also pass an oracle instance directly to in the target parameter,
-# e.g.
-# oracle = WeatherOracle()
-# client.register_oracle(oracle)
-# name.update(target=oracle)
 
+name.preclaim()  # preclaim will mark the domain as yours in the current block
+name.claim_blocking()  # will wait for the next block to claim the domain
+name.update(target='ak$1234deadbeef')  # set what this domain stands for
+```
+you can also pass an oracle instance directly to in the `target` parameter
+when calling `update`
+
+```python
+oracle = WeatherOracle()
+client.register_oracle(oracle)  # the oracle must be registered for this to work
+name.update(target=oracle)
 ```
 
